@@ -1,0 +1,34 @@
+# --- Python cache ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# --- Virtual environments ---
+venv/
+env/
+.venv/
+ENV/
+
+# --- VS Code ---
+.vscode/
+
+# --- Logs ---
+*.log
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Byte-compiled / optimized / DLL files ---
+*.so
+
+# --- PyInstaller ---
+*.spec
+dist/
+build/
+
+# --- Testing ---
+.coverage
+htmlcov/
+.pytest_cache/
