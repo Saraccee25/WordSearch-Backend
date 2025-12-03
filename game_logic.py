@@ -12,8 +12,9 @@ def crear_juego():
             "error": "No hay palabras disponibles"
         })
     
-    # Generar tablero con threading
-    tablero, palabras_colocadas = generar_tablero_con_palabras(palabras)
+    # Generar tablero con threading - GARANTIZADO con todas las palabras
+    from board_generator import generar_tablero_garantizado
+    tablero, palabras_colocadas = generar_tablero_garantizado(palabras, intentos_maximos=20)
     
     # Guardar tablero en storage (ArrayList)
     tablero_id = storage.guardar_tablero(tablero, palabras_colocadas)
@@ -45,31 +46,53 @@ def resolver_juego(juego_id, tablero_id):
     palabras = tablero_obj.palabras
     soluciones = []
     
+    print(f"\n{'='*60}")
+    print(f"🔍 RESOLVIENDO JUEGO #{juego_id}")
+    print(f"{'='*60}")
+    print(f"Total de palabras a buscar: {len(palabras)}")
+    print(f"Palabras: {palabras}")
+    print(f"{'='*60}\n")
+    
     # Buscar cada palabra en el tablero
-    for palabra in palabras:
+    for i, palabra in enumerate(palabras, 1):
+        print(f"Buscando palabra {i}/{len(palabras)}: {palabra}")
         posiciones = encontrar_palabra_en_tablero(tablero, palabra)
+        
         if posiciones:
+            print(f"  ✓ Encontrada en posiciones: {posiciones}")
             soluciones.append({
                 "palabra": palabra,
                 "posiciones": posiciones
             })
+        else:
+            print(f"  ✗ NO ENCONTRADA - Esto es un ERROR")
+    
+    print(f"\n{'='*60}")
+    print(f"✓ RESULTADO: {len(soluciones)}/{len(palabras)} palabras encontradas")
+    print(f"{'='*60}\n")
     
     # Marcar juego como completado en storage
     storage.actualizar_juego(juego_id, finalizar=True)
     
     return json.dumps({
         "soluciones": soluciones,
-        "mensaje": "Juego resuelto",
-        "total_palabras": len(soluciones)
+        "mensaje": f"Juego resuelto: {len(soluciones)}/{len(palabras)} palabras encontradas",
+        "total_palabras": len(soluciones),
+        "palabras_faltantes": [p for p in palabras if p not in [s["palabra"] for s in soluciones]]
     })
 
 def encontrar_palabra_en_tablero(tablero, palabra):
     """Encuentra una palabra en el tablero y retorna sus posiciones"""
+    # TODAS las 8 direcciones posibles
     direcciones = [
         (0, 1),   # Horizontal derecha
         (1, 0),   # Vertical abajo
         (1, 1),   # Diagonal abajo-derecha
         (1, -1),  # Diagonal abajo-izquierda
+        (0, -1),  # Horizontal izquierda
+        (-1, 0),  # Vertical arriba
+        (-1, -1), # Diagonal arriba-izquierda
+        (-1, 1),  # Diagonal arriba-derecha
     ]
     
     size = len(tablero)

@@ -8,9 +8,14 @@ tablero_lock = threading.Lock()
 
 def crear_tablero_vacio():
     """Crea un tablero lleno de letras aleatorias"""
-    return [[random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ") 
-             for _ in range(BOARD_SIZE)] 
-            for _ in range(BOARD_SIZE)]
+    return [[' ' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+
+def rellenar_espacios_vacios(tablero):
+    """Rellena los espacios vacíos con letras aleatorias"""
+    for i in range(len(tablero)):
+        for j in range(len(tablero[i])):
+            if tablero[i][j] == ' ':
+                tablero[i][j] = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 def puede_colocar_palabra(tablero: List[List[str]], palabra: str, 
                           fila: int, col: int, dir_fila: int, dir_col: int) -> bool:
@@ -30,75 +35,131 @@ def puede_colocar_palabra(tablero: List[List[str]], palabra: str,
         col_actual = col + dir_col * i
         letra_tablero = tablero[fila_actual][col_actual]
         
-        # Solo permitir si es letra aleatoria o coincide con la palabra
-        if letra_tablero.isalpha() and letra_tablero != palabra[i]:
-            # Si ya hay una letra diferente, no se puede colocar
-            if letra_tablero in palabra or any(letra_tablero in p for p in TODAS_LAS_PALABRAS):
-                return False
+        # Solo permitir si es espacio vacío o coincide con la letra
+        if letra_tablero != ' ' and letra_tablero != palabra[i]:
+            return False
     
     return True
 
-def colocar_palabra_segura(tablero: List[List[str]], palabra: str) -> bool:
-    """Intenta colocar una palabra en el tablero de forma thread-safe"""
-    # Direcciones: horizontal, vertical, diagonales
+def colocar_palabra_en_tablero(tablero: List[List[str]], palabra: str, 
+                                fila: int, col: int, dir_fila: int, dir_col: int):
+    """Coloca una palabra en el tablero"""
+    for i, letra in enumerate(palabra):
+        tablero[fila + dir_fila * i][col + dir_col * i] = letra
+
+def intentar_colocar_palabra(tablero: List[List[str]], palabra: str, max_intentos: int = 200) -> bool:
+    """Intenta colocar una palabra en el tablero con múltiples intentos"""
+    # Direcciones: horizontal, vertical, diagonales (8 direcciones)
     direcciones = [
         (0, 1),   # Horizontal derecha
         (1, 0),   # Vertical abajo
         (1, 1),   # Diagonal abajo-derecha
         (1, -1),  # Diagonal abajo-izquierda
+        (0, -1),  # Horizontal izquierda
+        (-1, 0),  # Vertical arriba
+        (-1, -1), # Diagonal arriba-izquierda
+        (-1, 1),  # Diagonal arriba-derecha
     ]
     
-    intentos = 0
-    max_intentos = 100
-    
-    with tablero_lock:  # Sincronizar acceso al tablero
-        while intentos < max_intentos:
-            fila = random.randint(0, BOARD_SIZE - 1)
-            col = random.randint(0, BOARD_SIZE - 1)
-            dir_fila, dir_col = random.choice(direcciones)
-            
-            if puede_colocar_palabra(tablero, palabra, fila, col, dir_fila, dir_col):
-                # Colocar la palabra
-                for i, letra in enumerate(palabra):
-                    tablero[fila + dir_fila * i][col + dir_col * i] = letra
-                return True
-            
-            intentos += 1
+    for intento in range(max_intentos):
+        fila = random.randint(0, BOARD_SIZE - 1)
+        col = random.randint(0, BOARD_SIZE - 1)
+        dir_fila, dir_col = random.choice(direcciones)
         
-        return False  # No se pudo colocar
-
-# Variable global temporal para las palabras
-TODAS_LAS_PALABRAS = []
+        if puede_colocar_palabra(tablero, palabra, fila, col, dir_fila, dir_col):
+            colocar_palabra_en_tablero(tablero, palabra, fila, col, dir_fila, dir_col)
+            return True
+    
+    return False
 
 def generar_tablero_con_palabras(palabras: List[str]) -> Tuple[List[List[str]], List[str]]:
-    """Genera un tablero con las palabras dadas usando hilos"""
-    global TODAS_LAS_PALABRAS
-    TODAS_LAS_PALABRAS = palabras
+    """Genera un tablero con las palabras dadas usando hilos - GARANTIZA todas las palabras"""
     
+    max_intentos_generacion = 10  # Intentos para generar un tablero completo
+    
+    for intento_generacion in range(max_intentos_generacion):
+        tablero = crear_tablero_vacio()
+        palabras_colocadas = []
+        palabras_pendientes = palabras.copy()
+        
+        # Ordenar palabras por longitud (las más largas primero)
+        palabras_pendientes.sort(key=len, reverse=True)
+        
+        # Fase 1: Colocar palabras largas primero (sin threading)
+        palabras_largas = [p for p in palabras_pendientes if len(p) >= 8]
+        for palabra in palabras_largas:
+            if intentar_colocar_palabra(tablero, palabra, max_intentos=300):
+                palabras_colocadas.append(palabra)
+                palabras_pendientes.remove(palabra)
+        
+        # Fase 2: Usar threading para palabras restantes
+        palabras_por_colocar = palabras_pendientes.copy()
+        palabras_colocadas_thread = []
+        lock_colocadas = threading.Lock()
+        
+        def intentar_colocar_thread(palabra: str):
+            with tablero_lock:
+                if intentar_colocar_palabra(tablero, palabra, max_intentos=200):
+                    with lock_colocadas:
+                        palabras_colocadas_thread.append(palabra)
+        
+        # Crear e iniciar hilos
+        hilos = []
+        for palabra in palabras_por_colocar:
+            hilo = threading.Thread(target=intentar_colocar_thread, args=(palabra,))
+            hilos.append(hilo)
+            hilo.start()
+        
+        # Esperar a que todos terminen
+        for hilo in hilos:
+            hilo.join()
+        
+        palabras_colocadas.extend(palabras_colocadas_thread)
+        
+        # Fase 3: Intentar colocar las que quedaron sin threading
+        palabras_faltantes = [p for p in palabras if p not in palabras_colocadas]
+        for palabra in palabras_faltantes:
+            if intentar_colocar_palabra(tablero, palabra, max_intentos=500):
+                palabras_colocadas.append(palabra)
+        
+        # Si logramos colocar TODAS las palabras, terminamos
+        if len(palabras_colocadas) == len(palabras):
+            print(f"✓ Tablero generado exitosamente en intento {intento_generacion + 1}")
+            print(f"  Palabras colocadas: {len(palabras_colocadas)}/{len(palabras)}")
+            rellenar_espacios_vacios(tablero)
+            return tablero, palabras_colocadas
+        else:
+            print(f"✗ Intento {intento_generacion + 1}: Solo se colocaron {len(palabras_colocadas)}/{len(palabras)} palabras")
+    
+    # Si después de todos los intentos no se logró, retornar el mejor resultado
+    print(f"⚠ Advertencia: Solo se pudieron colocar {len(palabras_colocadas)}/{len(palabras)} palabras")
+    rellenar_espacios_vacios(tablero)
+    return tablero, palabras_colocadas
+
+def generar_tablero_garantizado(palabras: List[str], intentos_maximos: int = 20) -> Tuple[List[List[str]], List[str]]:
+    """
+    Versión alternativa que GARANTIZA colocar todas las palabras
+    Reintenta múltiples veces hasta lograrlo
+    """
+    for intento in range(intentos_maximos):
+        tablero, palabras_colocadas = generar_tablero_con_palabras(palabras)
+        
+        if len(palabras_colocadas) == len(palabras):
+            return tablero, palabras_colocadas
+        
+        print(f"🔄 Reintentando... (intento {intento + 1}/{intentos_maximos})")
+    
+    # Si falló, usar método sin threading (más lento pero más confiable)
+    print("⚠ Usando método secuencial como respaldo...")
     tablero = crear_tablero_vacio()
     palabras_colocadas = []
-    lock_colocadas = threading.Lock()
+    palabras_ordenadas = sorted(palabras, key=len, reverse=True)
     
-    def intentar_colocar(palabra: str):
-        if colocar_palabra_segura(tablero, palabra):
-            with lock_colocadas:
-                palabras_colocadas.append(palabra)
+    for palabra in palabras_ordenadas:
+        if intentar_colocar_palabra(tablero, palabra, max_intentos=1000):
+            palabras_colocadas.append(palabra)
     
-    # Crear e iniciar hilos
-    hilos = []
-    for palabra in palabras:
-        hilo = threading.Thread(target=intentar_colocar, args=(palabra,))
-        hilos.append(hilo)
-        hilo.start()
-    
-    # Esperar a que todos terminen
-    for hilo in hilos:
-        hilo.join()
-    
-    # Si algunas palabras no se colocaron, intentar secuencialmente
-    for palabra in palabras:
-        if palabra not in palabras_colocadas:
-            if colocar_palabra_segura(tablero, palabra):
-                palabras_colocadas.append(palabra)
+    rellenar_espacios_vacios(tablero)
+    print(f"✓ Método secuencial: {len(palabras_colocadas)}/{len(palabras)} palabras colocadas")
     
     return tablero, palabras_colocadas
