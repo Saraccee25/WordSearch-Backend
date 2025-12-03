@@ -1,6 +1,3 @@
-HOST = "localhost"
-PORT = 5000
-
 BOARD_SIZE = 15
 
 WORDS = [

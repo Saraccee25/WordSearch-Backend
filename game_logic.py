@@ -10,8 +10,6 @@ def crear_juego(palabras):
     return json.dumps(paquete)
 
 def resolver_juego(palabras):
-    # Por ahora respuesta básica
-    # Luego podemos guardar coordenadas reales
     return json.dumps({
         "mensaje": "Resolver no implementado aún",
         "palabras": palabras
