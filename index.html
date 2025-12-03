@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras - Profesiones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+            background: #f0f4ff;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-warning {
+            background: #f6ad55;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .board-container {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        #board {
+            display: grid;
+            gap: 3px;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cell:hover {
+            background: #edf2f7;
+            transform: scale(1.1);
+        }
+
+        .cell.found {
+            background: #48bb78;
+            color: white;
+            border-color: #38a169;
+        }
+
+        .cell.solution {
+            background: #f6ad55;
+            color: white;
+            border-color: #ed8936;
+        }
+
+        .words-panel {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .words-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .word-list {
+            list-style: none;
+        }
+
+        .word-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #cbd5e0;
+            transition: all 0.3s;
+        }
+
+        .word-item.found {
+            background: #c6f6d5;
+            border-left-color: #48bb78;
+            text-decoration: line-through;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .progress {
+            margin-top: 15px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 25px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+            
+            .cell {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Sopa de Letras</h1>
+        <p class="subtitle">Encuentra todas las profesiones escondidas</p>
+
+        <div class="controls">
+            <div class="timer">⏱️ <span id="timer">00:00</span></div>
+            <div class="buttons">
+                <button id="btnStart" class="btn-primary" onclick="iniciarJuego()">Nuevo Juego</button>
+                <button id="btnResolve" class="btn-warning" onclick="resolverJuego()" disabled>Ver Solución</button>
+            </div>
+        </div>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%">0%</div>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div class="game-area">
+            <div class="board-container">
+                <div id="board" class="loading">
+                    Presiona "Nuevo Juego" para comenzar
+                </div>
+            </div>
+
+            <div class="words-panel">
+                <h3>📋 Palabras a Encontrar</h3>
+                <ul id="wordList" class="word-list">
+                    <li class="word-item">Esperando juego...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let juegoActivo = false;
+        let juegoDatos = null;
+        let timerInterval = null;
+        let tiempoInicio = null;
+        let palabrasEncontradas = [];
+
+        // Conectar al WebSocket
+        function conectarWebSocket() {
+            ws = new WebSocket('ws://localhost:5000');
+            
+            ws.onopen = () => {
+                console.log('✓ Conectado al servidor');
+                mostrarEstado('Conectado al servidor', 'success');
+            };
+            
+            ws.onmessage = (event) => {
+                const datos = JSON.parse(event.data);
+                console.log('Datos recibidos:', datos);
+                procesarRespuesta(datos);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('Error WebSocket:', error);
+                mostrarEstado('Error de conexión', 'error');
+            };
+            
+            ws.onclose = () => {
+                console.log('Desconectado del servidor');
+                mostrarEstado('Desconectado del servidor', 'error');
+            };
+        }
+
+        function iniciarJuego() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                conectarWebSocket();
+                setTimeout(() => {
+                    enviarComando('START');
+                }, 500);
+            } else {
+                enviarComando('START');
+            }
+        }
+
+        function enviarComando(comando, datos = {}) {
+            const mensaje = JSON.stringify({ comando, ...datos });
+            ws.send(mensaje);
+        }
+
+        function procesarRespuesta(datos) {
+            if (datos.error) {
+                mostrarEstado(datos.error, 'error');
+                return;
+            }
+
+            if (datos.tablero && datos.palabras) {
+                // Nuevo juego iniciado
+                juegoDatos = datos;
+                palabrasEncontradas = [];
+                dibujarTablero(datos.tablero);
+                mostrarPalabras(datos.palabras);
+                iniciarTimer();
+                juegoActivo = true;
+                document.getElementById('btnResolve').disabled = false;
+                mostrarEstado(`¡Juego iniciado! Encuentra ${datos.total_palabras} palabras`, 'success');
+                actualizarProgreso();
+            }
+
+            if (datos.soluciones) {
+                // Solución recibida
+                mostrarSolucion(datos.soluciones);
+                detenerTimer();
+                juegoActivo = false;
+            }
+
+            if (datos.palabras_encontradas !== undefined) {
+                // Actualización de progreso
+                palabrasEncontradas = datos.palabras_encontradas;
+                actualizarProgreso();
+                marcarPalabrasEncontradas();
+                
+                if (datos.completado) {
+                    mostrarEstado('🎉 ¡Felicidades! Has encontrado todas las palabras', 'success');
+                    detenerTimer();
+                    juegoActivo = false;
+                }
+            }
+        }
+
+        function dibujarTablero(tablero) {
+            const boardDiv = document.getElementById('board');
+            const size = tablero.length;
+            
+            boardDiv.innerHTML = '';
+            boardDiv.className = '';
+            boardDiv.style.gridTemplateColumns = `repeat(${size}, 35px)`;
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = tablero[i][j];
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function mostrarPalabras(palabras) {
+            const wordList = document.getElementById('wordList');
+            wordList.innerHTML = '';
+            
+            palabras.forEach(palabra => {
+                const li = document.createElement('li');
+                li.className = 'word-item';
+                li.textContent = palabra;
+                li.dataset.palabra = palabra;
+                wordList.appendChild(li);
+            });
+        }
+
+        function marcarPalabrasEncontradas() {
+            const items = document.querySelectorAll('.word-item');
+            items.forEach(item => {
+                if (palabrasEncontradas.includes(item.dataset.palabra)) {
+                    item.classList.add('found');
+                }
+            });
+        }
+
+        function resolverJuego() {
+            if (!juegoActivo) return;
+            enviarComando('RESOLVER');
+        }
+
+        function mostrarSolucion(soluciones) {
+            soluciones.forEach(solucion => {
+                solucion.posiciones.forEach(pos => {
+                    const cell = document.querySelector(
+                        `.cell[data-row="${pos[0]}"][data-col="${pos[1]}"]`
+                    );
+                    if (cell) {
+                        cell.classList.add('solution');
+                    }
+                });
+            });
+            mostrarEstado('Solución mostrada en el tablero', 'success');
+        }
+
+        function iniciarTimer() {
+            detenerTimer();
+            tiempoInicio = Date.now();
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - tiempoInicio) / 1000);
+                const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const secs = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function detenerTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function mostrarEstado(mensaje, tipo = '') {
+            const status = document.getElementById('status');
+            status.textContent = mensaje;
+            status.className = 'status ' + tipo;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        function actualizarProgreso() {
+            if (!juegoDatos) return;
+            
+            const total = juegoDatos.total_palabras;
+            const encontradas = palabrasEncontradas.length;
+            const porcentaje = Math.round((encontradas / total) * 100);
+            
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = porcentaje + '%';
+            progressBar.textContent = `${encontradas}/${total} - ${porcentaje}%`;
+        }
+
+        // Conectar al cargar la página
+        window.onload = () => {
+            conectarWebSocket();
+        };
+
+        // Limpiar al cerrar
+        window.onbeforeunload = () => {
+            if (ws) ws.close();
+        };
+    </script>
+</body>
+</html>
