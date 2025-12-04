@@ -48,55 +48,63 @@ def eliminar_sesion(websocket):
 async def handler(websocket):
     """Maneja las conexiones WebSocket"""
     sesion = agregar_sesion(websocket)
-    print(f"✓ Cliente {sesion.cliente_id} conectado")
+    print(f"✓ Cliente conectado (ID: {sesion.cliente_id})")
     print(f"  Total sesiones activas: {len(sesiones_activas)}")
     
     try:
         async for message in websocket:
-            print(f"📨 Mensaje de cliente {sesion.cliente_id}: {message}")
-            
             try:
-                # Intentar parsear como JSON
+                # Parsear mensaje JSON del frontend
                 datos = json.loads(message)
                 comando = datos.get("comando", "").upper()
                 
                 if comando == "START":
-                    # Crear nuevo juego
+                    # Botón "Nuevo Juego" presionado
+                    print(f"🎮 Nuevo juego iniciado (Cliente: {sesion.cliente_id})")
                     paquete = crear_juego()
                     datos_juego = json.loads(paquete)
                     
-                    # Actualizar sesión con datos del juego
                     sesion.juego_id = datos_juego.get("juego_id")
                     sesion.tablero_id = datos_juego.get("tablero_id")
                     
                     await websocket.send(paquete)
-                    print(f"✓ Juego {sesion.juego_id} creado para cliente {sesion.cliente_id}")
+                    print(f"   → Palabras: {datos_juego.get('total_palabras')}")
                 
                 elif comando == "RESOLVER":
-                    # Resolver el juego actual
+                    # Botón "Ver Solución" presionado
                     if sesion.juego_id and sesion.tablero_id:
+                        print(f"🔍 Solución solicitada (Cliente: {sesion.cliente_id})")
                         respuesta = resolver_juego(sesion.juego_id, sesion.tablero_id)
+                        datos_respuesta = json.loads(respuesta)
+                        
                         await websocket.send(respuesta)
-                        print(f"✓ Solución enviada a cliente {sesion.cliente_id}")
+                        print(f"   → Soluciones enviadas: {len(datos_respuesta.get('soluciones', []))}")
                     else:
                         await websocket.send(json.dumps({
-                            "error": "No hay juego activo. Envía START primero."
+                            "error": "No hay juego activo."
                         }))
                 
                 elif comando == "ENCONTRAR":
-                    # Jugador encontró una palabra
+                    # Usuario seleccionó una palabra correcta
                     if sesion.juego_id:
                         palabra = datos.get("palabra", "").upper()
                         respuesta = actualizar_progreso(sesion.juego_id, palabra)
+                        datos_respuesta = json.loads(respuesta)
+                        
                         await websocket.send(respuesta)
-                        print(f"✓ Palabra '{palabra}' marcada como encontrada")
+                        
+                        palabras_encontradas = len(datos_respuesta.get('palabras_encontradas', []))
+                        total = datos_respuesta.get('total_palabras', 0)
+                        print(f"✓ Palabra encontrada: {palabra} ({palabras_encontradas}/{total})")
+                        
+                        if datos_respuesta.get('completado', False):
+                            print(f"🎉 ¡Juego completado! (Cliente: {sesion.cliente_id})")
                     else:
                         await websocket.send(json.dumps({
                             "error": "No hay juego activo"
                         }))
                 
                 elif comando == "ESTADO":
-                    # Obtener estado del juego actual
                     if sesion.juego_id:
                         respuesta = obtener_estado_juego(sesion.juego_id)
                         await websocket.send(respuesta)
@@ -106,53 +114,30 @@ async def handler(websocket):
                         }))
                 
                 elif comando == "ESTADISTICAS":
-                    # Obtener estadísticas generales
                     respuesta = obtener_estadisticas()
                     await websocket.send(respuesta)
                 
                 else:
                     await websocket.send(json.dumps({
-                        "error": f"Comando desconocido: {comando}",
-                        "comandos_disponibles": ["START", "RESOLVER", "ENCONTRAR", "ESTADO", "ESTADISTICAS"]
+                        "error": f"Comando desconocido: {comando}"
                     }))
                     
             except json.JSONDecodeError:
-                # Compatibilidad con mensajes de texto plano
-                message = message.strip().upper()
-                
-                if message == "START":
-                    paquete = crear_juego()
-                    datos_juego = json.loads(paquete)
-                    
-                    sesion.juego_id = datos_juego.get("juego_id")
-                    sesion.tablero_id = datos_juego.get("tablero_id")
-                    
-                    await websocket.send(paquete)
-                
-                elif message == "RESOLVER":
-                    if sesion.juego_id and sesion.tablero_id:
-                        respuesta = resolver_juego(sesion.juego_id, sesion.tablero_id)
-                        await websocket.send(respuesta)
-                    else:
-                        await websocket.send(json.dumps({
-                            "error": "No hay juego activo"
-                        }))
-                
-                else:
-                    await websocket.send(json.dumps({
-                        "error": "Formato de mensaje inválido. Usa JSON o comandos: START, RESOLVER"
-                    }))
+                await websocket.send(json.dumps({
+                    "error": "Formato de mensaje inválido"
+                }))
     
     except websockets.exceptions.ConnectionClosed:
-        print(f"✗ Cliente {sesion.cliente_id} desconectado")
+        print(f"✗ Cliente desconectado (ID: {sesion.cliente_id})")
     
     except Exception as e:
-        print(f"❌ Error en handler: {e}")
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
     
     finally:
-        # Limpiar sesión del ArrayList
         eliminar_sesion(websocket)
-        print(f"  Total sesiones activas: {len(sesiones_activas)}")
+        print(f"   Total sesiones activas: {len(sesiones_activas)}")
 
 async def main():
     """Inicia el servidor WebSocket"""
@@ -162,23 +147,27 @@ async def main():
     print(f"📊 Storage inicializado con {len(storage.palabras)} palabras")
     print(f"🚀 Servidor WebSocket escuchando en ws://{HOST}:{PORT}")
     print("=" * 60)
-    print("\nComandos disponibles para clientes:")
-    print("  - START: Iniciar nuevo juego")
-    print("  - RESOLVER: Obtener solución")
-    print("  - ENCONTRAR: Marcar palabra encontrada")
-    print("  - ESTADO: Ver estado del juego")
-    print("  - ESTADISTICAS: Ver estadísticas generales")
+    print("\n✅ Servidor listo para recibir conexiones del frontend")
+    print("   - Los comandos se envían automáticamente desde la interfaz web")
+    print("   - No se requiere interacción manual del usuario")
     print("\nPresiona Ctrl+C para detener el servidor\n")
+    print("=" * 60)
     
     try:
         async with websockets.serve(handler, HOST, PORT):
             await asyncio.Future()  # Mantener vivo
     except KeyboardInterrupt:
-        print("\n⏹ Deteniendo servidor...")
+        print("\n" + "=" * 60)
+        print("⏹ Deteniendo servidor...")
         print(f"📈 Estadísticas finales: {storage.obtener_estadisticas()}")
+        print("=" * 60)
         
         # Opcional: Exportar datos antes de cerrar
-        storage.exportar_datos()
+        try:
+            storage.exportar_datos()
+            print("💾 Datos exportados correctamente")
+        except Exception as e:
+            print(f"⚠️ Error al exportar datos: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())
