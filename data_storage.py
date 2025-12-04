@@ -71,16 +71,16 @@ class DataStorage:
     """Simula una base de datos usando ArrayLists (listas de Python)"""
     
     def __init__(self):
-        # ArrayLists equivalentes
+       
         self.palabras: List[Palabra] = []
         self.tableros: List[Tablero] = []
         self.juegos: List[Juego] = []
         
-        # Contadores para IDs
+       
         self._next_tablero_id = 1
         self._next_juego_id = 1
         
-        # Inicializar con palabras por defecto
+        
         self._inicializar_palabras()
     
     def _inicializar_palabras(self):
@@ -97,11 +97,11 @@ class DataStorage:
             palabra = Palabra(palabra_texto, "PROFESIONES")
             self.palabras.append(palabra)
     
-    # ==================== OPERACIONES CON PALABRAS ====================
+    
     
     def agregar_palabra(self, texto: str, categoria: str = "PROFESIONES"):
         """Agrega una palabra al ArrayList"""
-        # Verificar que no exista
+       
         if not any(p.texto == texto.upper() for p in self.palabras):
             palabra = Palabra(texto, categoria)
             self.palabras.append(palabra)
@@ -121,7 +121,7 @@ class DataStorage:
                 return palabra
         return None
     
-    # ==================== OPERACIONES CON TABLEROS ====================
+   
     
     def guardar_tablero(self, matriz: List[List[str]], palabras: List[str]) -> int:
         """Guarda un tablero en el ArrayList y retorna su ID"""
@@ -141,7 +141,7 @@ class DataStorage:
         """Retorna todos los tableros del ArrayList"""
         return self.tableros
     
-    # ==================== OPERACIONES CON JUEGOS ====================
+    
     
     def crear_juego(self, tablero_id: int) -> int:
         """Crea un nuevo juego en el ArrayList y retorna su ID"""
@@ -172,7 +172,7 @@ class DataStorage:
         """Retorna todos los juegos del ArrayList"""
         return self.juegos
     
-    # ==================== UTILIDADES ====================
+   
     
     def obtener_estadisticas(self):
         """Retorna estadísticas del storage"""
@@ -206,5 +206,5 @@ class DataStorage:
         self._inicializar_palabras()
 
 
-# Instancia global del storage (Singleton)
+
 storage = DataStorage()

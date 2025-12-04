@@ -4,7 +4,7 @@ import json
 
 def crear_juego():
     """Crea un nuevo juego con tablero y palabras desde storage"""
-    # Obtener palabras del storage (ArrayList)
+    
     palabras = storage.obtener_palabras("PROFESIONES")
     
     if not palabras:
@@ -12,14 +12,14 @@ def crear_juego():
             "error": "No hay palabras disponibles"
         })
     
-    # Generar tablero con threading - GARANTIZADO con todas las palabras
+  
     from board_generator import generar_tablero_garantizado
     tablero, palabras_colocadas = generar_tablero_garantizado(palabras, intentos_maximos=20)
     
-    # Guardar tablero en storage (ArrayList)
+  
     tablero_id = storage.guardar_tablero(tablero, palabras_colocadas)
     
-    # Crear sesión de juego en storage (ArrayList)
+
     juego_id = storage.crear_juego(tablero_id)
     
     paquete = {
@@ -34,7 +34,7 @@ def crear_juego():
 
 def resolver_juego(juego_id, tablero_id):
     """Encuentra las posiciones de todas las palabras en el tablero"""
-    # Obtener tablero del storage (ArrayList)
+   
     tablero_obj = storage.obtener_tablero(tablero_id)
     
     if not tablero_obj:
@@ -53,7 +53,7 @@ def resolver_juego(juego_id, tablero_id):
     print(f"Palabras: {palabras}")
     print(f"{'='*60}\n")
     
-    # Buscar cada palabra en el tablero
+
     for i, palabra in enumerate(palabras, 1):
         print(f"Buscando palabra {i}/{len(palabras)}: {palabra}")
         posiciones = encontrar_palabra_en_tablero(tablero, palabra)
@@ -71,7 +71,7 @@ def resolver_juego(juego_id, tablero_id):
     print(f"✓ RESULTADO: {len(soluciones)}/{len(palabras)} palabras encontradas")
     print(f"{'='*60}\n")
     
-    # Marcar juego como completado en storage
+ 
     storage.actualizar_juego(juego_id, finalizar=True)
     
     return json.dumps({
@@ -83,16 +83,16 @@ def resolver_juego(juego_id, tablero_id):
 
 def encontrar_palabra_en_tablero(tablero, palabra):
     """Encuentra una palabra en el tablero y retorna sus posiciones"""
-    # TODAS las 8 direcciones posibles
+    
     direcciones = [
-        (0, 1),   # Horizontal derecha
-        (1, 0),   # Vertical abajo
-        (1, 1),   # Diagonal abajo-derecha
-        (1, -1),  # Diagonal abajo-izquierda
-        (0, -1),  # Horizontal izquierda
-        (-1, 0),  # Vertical arriba
-        (-1, -1), # Diagonal arriba-izquierda
-        (-1, 1),  # Diagonal arriba-derecha
+        (0, 1),   
+        (1, 0),   
+        (1, 1),  
+        (1, -1), 
+        (0, -1),  
+        (-1, 0),  
+        (-1, -1), 
+        (-1, 1),  
     ]
     
     size = len(tablero)
@@ -107,12 +107,12 @@ def encontrar_palabra_en_tablero(tablero, palabra):
                     nueva_fila = fila + dir_fila * i
                     nueva_col = col + dir_col * i
                     
-                    # Verificar límites
+                   
                     if not (0 <= nueva_fila < size and 0 <= nueva_col < size):
                         encontrada = False
                         break
                     
-                    # Verificar letra
+                    
                     if tablero[nueva_fila][nueva_col] != letra:
                         encontrada = False
                         break
@@ -133,10 +133,10 @@ def actualizar_progreso(juego_id, palabra_encontrada):
             "error": "Juego no encontrado"
         })
     
-    # Agregar palabra al ArrayList de palabras encontradas
+   
     storage.actualizar_juego(juego_id, palabra_encontrada=palabra_encontrada)
     
-    # Verificar si completó todas las palabras
+ 
     tablero = storage.obtener_tablero(juego.tablero_id)
     total_palabras = len(tablero.palabras)
     palabras_encontradas = len(juego.palabras_encontradas)

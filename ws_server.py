@@ -7,7 +7,7 @@ from data_storage import storage
 HOST = "localhost"
 PORT = 5000
 
-# ArrayList para almacenar sesiones activas
+
 sesiones_activas = []
 
 class Sesion:
@@ -54,12 +54,12 @@ async def handler(websocket):
     try:
         async for message in websocket:
             try:
-                # Parsear mensaje JSON del frontend
+               
                 datos = json.loads(message)
                 comando = datos.get("comando", "").upper()
                 
                 if comando == "START":
-                    # Botón "Nuevo Juego" presionado
+                   
                     print(f"🎮 Nuevo juego iniciado (Cliente: {sesion.cliente_id})")
                     paquete = crear_juego()
                     datos_juego = json.loads(paquete)
@@ -71,7 +71,7 @@ async def handler(websocket):
                     print(f"   → Palabras: {datos_juego.get('total_palabras')}")
                 
                 elif comando == "RESOLVER":
-                    # Botón "Ver Solución" presionado
+                    
                     if sesion.juego_id and sesion.tablero_id:
                         print(f"🔍 Solución solicitada (Cliente: {sesion.cliente_id})")
                         respuesta = resolver_juego(sesion.juego_id, sesion.tablero_id)
@@ -85,7 +85,7 @@ async def handler(websocket):
                         }))
                 
                 elif comando == "ENCONTRAR":
-                    # Usuario seleccionó una palabra correcta
+                
                     if sesion.juego_id:
                         palabra = datos.get("palabra", "").upper()
                         respuesta = actualizar_progreso(sesion.juego_id, palabra)
@@ -154,7 +154,7 @@ async def main():
     print("=" * 60)
     
     async with websockets.serve(handler, HOST, PORT):
-        await asyncio.Future()  # Mantener vivo
+        await asyncio.Future()  
 
 if __name__ == "__main__":
     try:
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         print(f"📈 Estadísticas finales: {storage.obtener_estadisticas()}")
         print("=" * 60)
         
-        # Opcional: Exportar datos antes de cerrar
+
         try:
             storage.exportar_datos()
             print("💾 Datos exportados correctamente")
