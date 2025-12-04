@@ -153,12 +153,15 @@ async def main():
     print("\nPresiona Ctrl+C para detener el servidor\n")
     print("=" * 60)
     
+    async with websockets.serve(handler, HOST, PORT):
+        await asyncio.Future()  # Mantener vivo
+
+if __name__ == "__main__":
     try:
-        async with websockets.serve(handler, HOST, PORT):
-            await asyncio.Future()  # Mantener vivo
+        asyncio.run(main())
     except KeyboardInterrupt:
         print("\n" + "=" * 60)
-        print("⏹ Deteniendo servidor...")
+        print("⏹ Servidor detenido correctamente")
         print(f"📈 Estadísticas finales: {storage.obtener_estadisticas()}")
         print("=" * 60)
         
@@ -168,6 +171,7 @@ async def main():
             print("💾 Datos exportados correctamente")
         except Exception as e:
             print(f"⚠️ Error al exportar datos: {e}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        
+        print("=" * 60)
+        print("👋 ¡Hasta luego!")
+        print("=" * 60)
